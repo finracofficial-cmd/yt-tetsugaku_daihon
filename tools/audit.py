@@ -1,0 +1,323 @@
+#!/usr/bin/env python3
+"""台本の機械監査(工程4・第1段階)
+
+使い方:
+    python3 tools/audit.py output/<dir>/03_台本.txt
+    python3 tools/audit.py output/<dir>/03_台本.txt --verbose
+
+入力は本文のみのプレーンテキスト。段落は空行で区切る。
+FAILが1つでもあれば終了コード1を返す。
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+import unicodedata
+
+SPEC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "beats.json")
+
+KATAKANA = r"[ァ-ヴーｦ-ﾟ]"
+
+RESULTS = []
+
+
+def record(level, label, detail=""):
+    RESULTS.append((level, label, detail))
+
+
+def body_len(text):
+    """空白・改行を除いた文字数。"""
+    return len(re.sub(r"\s", "", text))
+
+
+def load_paragraphs(path):
+    with open(path, encoding="utf-8") as f:
+        raw = f.read()
+    raw = unicodedata.normalize("NFC", raw)
+    paras = [p.strip() for p in re.split(r"\n\s*\n", raw) if p.strip()]
+    return paras
+
+
+def map_beats(paras, spec):
+    """段落をビート番号に対応づける。(beat_no, text) のリストを返す。"""
+    beats = spec["beats"]
+    n = len(paras)
+    if n == len(beats):
+        return list(zip([b["n"] for b in beats], paras)), True
+    if n == len(beats) - 1:
+        # ビート40(メタCTA)は省略可
+        nums = [b["n"] for b in beats if b["n"] != 40]
+        return list(zip(nums, paras)), True
+    nums = [b["n"] for b in beats][:n]
+    if n > len(beats):
+        nums += list(range(len(beats) + 1, n + 1))
+    return list(zip(nums, paras)), False
+
+
+def strip_quotes(text):
+    """かぎ括弧内の引用を除去(敬語・煽り語の誤検出を避けるため)。"""
+    return re.sub(r"「[^」]*」", "", text)
+
+
+def check_length(paras, spec):
+    total = sum(body_len(p) for p in paras)
+    lo = spec["body_min"]
+    if total >= lo:
+        record("PASS", f"本文の総字数 {total:,}字", f"下限{lo:,}字")
+    else:
+        record("FAIL", f"本文の総字数 {total:,}字", f"下限{lo:,}字に{lo - total:,}字不足。増築が必要")
+    if total > spec["body_max_soft"]:
+        record("WARN", f"総字数が目安上限を超過 {total:,}字", f"目安上限{spec['body_max_soft']:,}字。約20分を超える可能性")
+    return total
+
+
+def check_paragraphs(paras, spec, exact):
+    n = len(paras)
+    target = spec["paragraph_target"]
+    if n == target:
+        record("PASS", f"段落数 {n}", f"目標{target}")
+    elif n == target - 1:
+        record("PASS", f"段落数 {n}", "ビート40(メタCTA)の省略とみなす")
+    elif n >= spec["paragraph_min"]:
+        record("WARN", f"段落数 {n}", f"目標{target}。ビート対応が近似になる")
+    else:
+        record("FAIL", f"段落数 {n}", f"下限{spec['paragraph_min']}未満。ビートの欠落がある")
+    if not exact:
+        record("WARN", "ビート対応は近似", "段落数が41でないため、以下のビート別判定は参考値")
+
+
+def check_beat_lengths(mapped, spec):
+    by_n = {b["n"]: b for b in spec["beats"]}
+    ratio_min = spec["beat_ratio_min"]
+    short = []
+    for n, text in mapped:
+        b = by_n.get(n)
+        if not b:
+            continue
+        actual = body_len(text)
+        need = int(b["target"] * ratio_min)
+        if actual < need:
+            short.append((n, b["name"], actual, b["target"]))
+    if short:
+        detail = " / ".join(f"B{n} {name} {a}字(目標{t})" for n, name, a, t in short)
+        record("FAIL", f"目標字数を{int(ratio_min*100)}パーセント下回るビート {len(short)}件", detail)
+    else:
+        record("PASS", "全ビートが目標字数を満たす", f"許容 目標の{int(ratio_min*100)}パーセント以上")
+
+
+def check_heavy_beats(mapped, spec):
+    by_n = {b["n"]: b for b in spec["beats"]}
+    lo = spec["heavy_beat_min"]
+    bad = []
+    for n in spec["heavy_beats"]:
+        text = dict(mapped).get(n)
+        if text is None:
+            bad.append(f"B{n} 欠落")
+            continue
+        a = body_len(text)
+        if a < lo:
+            bad.append(f"B{n} {by_n[n]['name']} {a}字")
+    if bad:
+        record("FAIL", f"重量級ビートが{lo}字未満", " / ".join(bad) + " ← ここが台本の格を決める。最優先で増築")
+    else:
+        record("PASS", "重量級ビート10・17・24・30・37", f"全て{lo}字以上")
+
+
+def check_question_ends(mapped, spec):
+    d = dict(mapped)
+    bad = []
+    for n in spec["question_end_beats"]:
+        text = d.get(n)
+        if text is None:
+            bad.append(f"B{n} 欠落")
+            continue
+        tail = text.rstrip().rstrip("。」")
+        if not tail.endswith("か"):
+            bad.append(f"B{n} 末尾「{text.rstrip()[-14:]}」")
+    if bad:
+        record("FAIL", "ブロック末尾が疑問文で終わっていない", " / ".join(bad))
+    else:
+        record("PASS", "ブロック末尾13・20・27・32・36", "全て疑問文で終わる")
+
+
+def check_twist_position(mapped, spec, total):
+    n_twist = spec["twist_beat"]
+    cum = 0
+    found = False
+    for n, text in mapped:
+        cum += body_len(text)
+        if n == n_twist:
+            found = True
+            break
+    if not found:
+        record("FAIL", "裏切り予告(ビート13)が見つからない", "")
+        return
+    ratio = cum / total if total else 0
+    lo, hi = spec["twist_position_min"], spec["twist_position_max"]
+    label = f"裏切り予告の位置 {ratio*100:.1f}パーセント地点"
+    if lo <= ratio <= hi:
+        record("PASS", label, f"許容{lo*100:.0f}〜{hi*100:.0f}パーセント")
+    else:
+        record("WARN", label, f"許容{lo*100:.0f}〜{hi*100:.0f}パーセントから外れている")
+
+
+def check_tts(paras, spec):
+    tts = spec["tts"]
+    joined = "\n".join(paras)
+
+    hits = sorted({c for c in tts["forbidden_chars"] + tts["forbidden_colons"] if c in joined})
+    if hits:
+        record("FAIL", "禁止記号を検出", " ".join(hits) + " ← AI音声が誤読または沈黙する")
+    else:
+        record("PASS", "禁止記号なし", "")
+
+    # 中黒:カタカナ名の区切り以外は禁止
+    bad_dots = []
+    for m in re.finditer("・", joined):
+        i = m.start()
+        prev = joined[i - 1] if i > 0 else ""
+        nxt = joined[i + 1] if i + 1 < len(joined) else ""
+        if not (re.match(KATAKANA, prev or " ") and re.match(KATAKANA, nxt or " ")):
+            bad_dots.append(joined[max(0, i - 8):i + 8].replace("\n", ""))
+    if bad_dots:
+        record("FAIL", f"列挙用の中黒を検出 {len(bad_dots)}件", " / ".join(bad_dots[:5]) + " ← 外国人名の区切りのみ許可")
+    else:
+        record("PASS", "中黒の用法", "外国人名の区切りのみ")
+
+    allowed = set(tts["allowed_abbreviations"])
+    latin = {w for w in re.findall(r"[A-Za-zＡ-Ｚａ-ｚ]{1,}", joined)}
+    latin = {w for w in latin if w.upper() not in allowed}
+    if latin:
+        record("FAIL", f"カタカナ化されていない英字 {len(latin)}件", " ".join(sorted(latin)[:12]) + " ← ティンダー等のカタカナ表記に直す")
+    else:
+        record("PASS", "英字のカタカナ化", "定着略称のみ残存")
+
+    if re.search(r"\d+\s*[%％]", joined):
+        record("FAIL", "パーセント記号を検出", "「パーセント」と書く")
+
+
+def check_style(mapped, spec):
+    tts = spec["tts"]
+    allowed = set(spec["polite_allowed_beats"])
+
+    polite = []
+    for n, text in mapped:
+        if n in allowed:
+            continue
+        t = strip_quotes(text)
+        if re.search(r"(です|ます|ください|ましょう)[。、]", t):
+            polite.append(f"B{n}")
+    if polite:
+        record("WARN", f"本文に敬語 {len(polite)}件", " ".join(polite) + " ← 敬語はビート40〜41のみ。引用文中なら問題なし")
+    else:
+        record("PASS", "敬語の位置", "ビート40〜41のみ")
+
+    joined = strip_quotes("\n".join(t for _, t in mapped))
+    hype = [w for w in tts["hype_words"] if w in joined]
+    if hype:
+        record("WARN", "煽り語を検出", " ".join(hype) + " ← 静かに断定する文体に直す")
+    else:
+        record("PASS", "煽り語なし", "")
+
+    second = len(re.findall(r"(欲しい|あなた|考えてみ|想像してみ)", joined))
+    if second >= 4:
+        record("PASS", f"二人称の呼びかけ {second}回", "目安4回以上")
+    else:
+        record("WARN", f"二人称の呼びかけ {second}回", "目安4回以上。ミクロ情景ごとに1回入れる")
+
+
+def check_signature(paras, spec):
+    sig = spec["signature"]
+    if paras and sig in paras[-1]:
+        record("PASS", "シグネチャ", sig)
+    else:
+        record("FAIL", "シグネチャが末尾にない", f"最終段落を「{sig}」で始まる締めにする")
+
+
+def check_numbers(mapped, spec):
+    d = dict(mapped)
+    b3 = d.get(3, "")
+    nums = re.findall(r"[0-9０-９]+(?:[.,][0-9０-９]+)?", b3)
+    if len(nums) >= 3:
+        record("PASS", f"ビート3の数字 {len(nums)}個", "丸めない数字を3つ以上")
+    else:
+        record("WARN", f"ビート3の数字 {len(nums)}個", "市場規模ビートには丸めない数字を3つ以上")
+
+
+def print_verbose(mapped, spec):
+    by_n = {b["n"]: b for b in spec["beats"]}
+    print("\nビート別字数")
+    print("-" * 58)
+    cur_block = None
+    for n, text in mapped:
+        b = by_n.get(n)
+        if not b:
+            print(f"  +{n:>2}  (設計図外の余剰段落)          {body_len(text):>5}字")
+            continue
+        if b["block"] != cur_block:
+            cur_block = b["block"]
+            print(f"[ブロック{cur_block}] {spec['blocks'][cur_block]['name']}")
+        a, t = body_len(text), b["target"]
+        mark = "OK " if a >= t * spec["beat_ratio_min"] else "薄い"
+        print(f"  {n:>2}  {b['name']:<12} {a:>5}字 / 目標{t:>4}字  {mark}")
+    print("-" * 58)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="台本の機械監査")
+    ap.add_argument("path", help="台本本文のプレーンテキスト")
+    ap.add_argument("--verbose", "-v", action="store_true", help="ビート別字数の一覧を出す")
+    args = ap.parse_args()
+
+    if not os.path.exists(args.path):
+        print(f"ファイルが見つからない: {args.path}", file=sys.stderr)
+        return 2
+
+    spec = json.load(open(SPEC_PATH, encoding="utf-8"))
+    paras = load_paragraphs(args.path)
+    if not paras:
+        print("本文が空", file=sys.stderr)
+        return 2
+
+    mapped, exact = map_beats(paras, spec)
+
+    total = check_length(paras, spec)
+    check_paragraphs(paras, spec, exact)
+    check_beat_lengths(mapped, spec)
+    check_heavy_beats(mapped, spec)
+    check_question_ends(mapped, spec)
+    check_twist_position(mapped, spec, total)
+    check_numbers(mapped, spec)
+    check_tts(paras, spec)
+    check_style(mapped, spec)
+    check_signature(paras, spec)
+
+    print(f"監査対象: {args.path}")
+    print("=" * 58)
+    for level, label, detail in RESULTS:
+        mark = {"PASS": "[  OK  ]", "WARN": "[ WARN ]", "FAIL": "[ FAIL ]"}[level]
+        print(f"{mark} {label}")
+        if detail:
+            print(f"         {detail}")
+    print("=" * 58)
+
+    if args.verbose:
+        print_verbose(mapped, spec)
+
+    fails = sum(1 for r in RESULTS if r[0] == "FAIL")
+    warns = sum(1 for r in RESULTS if r[0] == "WARN")
+    est_min = total / 320  # AI音声の実測レート(約320字/分)
+    print(f"\n総字数 {total:,}字 / 段落 {len(paras)} / 推定尺 約{est_min:.1f}分")
+    if fails:
+        print(f"判定: 不合格(FAIL {fails}件、WARN {warns}件)")
+        print("削るのではなく増築して再監査すること。優先順位は references/audit.md を参照")
+        return 1
+    print(f"判定: 合格(WARN {warns}件)")
+    print("次は references/audit.md の目視チェックへ")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
