@@ -108,6 +108,7 @@ def main():
     for title, fn in [
         ("41ビート設計図", "beats.md"),
         ("書き方の規律", "style.md"),
+        ("サムネイル生成プロンプトの作り方", "thumbnail.md"),
         ("工程4 監査チェックリスト", "audit.md"),
     ]:
         body = read(os.path.join(SKILL, "references", fn))
