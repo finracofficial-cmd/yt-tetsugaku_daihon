@@ -1,9 +1,9 @@
 {
-  "version": "3.1",
-  "total_target": 6866,
-  "body_min": 6500,
-  "body_max_soft": 7500,
-  "paragraph_target": 41,
+  "version": "3.2",
+  "total_target": 6900,
+  "body_min": 6000,
+  "body_max_soft": 7600,
+  "paragraph_target": 40,
   "paragraph_min": 38,
   "beat_ratio_min": 0.8,
   "heavy_beats": [
@@ -22,7 +22,7 @@
     36
   ],
   "scene_beats": [
-    11,
+    2,
     19,
     27,
     35
@@ -40,12 +40,12 @@
   "signature": "そんなことまで、また解剖してしまいました。",
   "blocks": {
     "A": {
-      "name": "フック",
+      "name": "フックと予告",
       "beats": [
         1,
         6
       ],
-      "target": 580
+      "target": 820
     },
     "B": {
       "name": "通説の解体",
@@ -53,7 +53,7 @@
         7,
         13
       ],
-      "target": 1145
+      "target": 1150
     },
     "C": {
       "name": "メカニズムの解剖",
@@ -61,23 +61,23 @@
         14,
         20
       ],
-      "target": 1480
+      "target": 1430
     },
     "D": {
-      "name": "帳簿=金の流れ",
+      "name": "非対称性の解剖",
       "beats": [
         21,
         27
       ],
-      "target": 1292
+      "target": 1240
     },
     "E": {
-      "name": "文明史と反転",
+      "name": "巨視化と反転",
       "beats": [
         28,
         32
       ],
-      "target": 939
+      "target": 940
     },
     "F": {
       "name": "代償の実測",
@@ -85,35 +85,36 @@
         33,
         36
       ],
-      "target": 600
+      "target": 610
     },
     "G": {
-      "name": "回収と鏡",
+      "name": "回収と着地",
       "beats": [
         37,
         41
       ],
-      "target": 830
+      "target": 775,
+      "target_without_beat40": 710
     }
   },
   "beats": [
     {
       "n": 1,
       "block": "A",
-      "name": "一撃の1文",
-      "target": 30
+      "name": "開幕の一撃(情景か逆説)",
+      "target": 45
     },
     {
       "n": 2,
       "block": "A",
-      "name": "その数字の解説",
-      "target": 150
+      "name": "情景の展開(二人称)",
+      "target": 200
     },
     {
       "n": 3,
       "block": "A",
-      "name": "市場規模・現在地",
-      "target": 140
+      "name": "現象の広がりと数字",
+      "target": 160
     },
     {
       "n": 4,
@@ -124,14 +125,14 @@
     {
       "n": 5,
       "block": "A",
-      "name": "違和感の提示",
-      "target": 140
+      "name": "意外な予告リスト",
+      "target": 235
     },
     {
       "n": 6,
       "block": "A",
-      "name": "中心の問い+約束",
-      "target": 60
+      "name": "中心の問いと学問の宣言",
+      "target": 120
     },
     {
       "n": 7,
@@ -160,20 +161,20 @@
     {
       "n": 11,
       "block": "B",
-      "name": "ミクロ情景",
-      "target": 150
+      "name": "現代語への翻訳",
+      "target": 110
     },
     {
       "n": 12,
       "block": "B",
-      "name": "それでも消えない事実",
-      "target": 90
+      "name": "想定反論1",
+      "target": 145
     },
     {
       "n": 13,
       "block": "B",
       "name": "裏切り予告",
-      "target": 190
+      "target": 180
     },
     {
       "n": 14,
@@ -185,18 +186,18 @@
       "n": 15,
       "block": "C",
       "name": "別角度からの検証",
-      "target": 240
+      "target": 230
     },
     {
       "n": 16,
       "block": "C",
-      "name": "さらに精密な実験",
-      "target": 240
+      "name": "限界と反証",
+      "target": 195
     },
     {
       "n": 17,
       "block": "C",
-      "name": "意外な傍証",
+      "name": "飛び道具",
       "target": 340
     },
     {
@@ -208,8 +209,8 @@
     {
       "n": 19,
       "block": "C",
-      "name": "ミクロ情景",
-      "target": 105
+      "name": "二人称の情景",
+      "target": 110
     },
     {
       "n": 20,
@@ -221,73 +222,73 @@
       "n": 21,
       "block": "D",
       "name": "視点転換の宣言",
-      "target": 32
+      "target": 35
     },
     {
       "n": 22,
       "block": "D",
-      "name": "原価と価格の乖離",
-      "target": 200
+      "name": "非対称の提示",
+      "target": 195
     },
     {
       "n": 23,
       "block": "D",
       "name": "悪玉回避",
-      "target": 175
+      "target": 165
     },
     {
       "n": 24,
       "block": "D",
-      "name": "隠れた第二の用途",
-      "target": 375
+      "name": "隠れた構造",
+      "target": 355
     },
     {
       "n": 25,
       "block": "D",
-      "name": "買った側の隠れコスト",
-      "target": 215
+      "name": "視聴者参加の問い",
+      "target": 190
     },
     {
       "n": 26,
       "block": "D",
-      "name": "不都合な統計",
-      "target": 105
+      "name": "想定反論2",
+      "target": 110
     },
     {
       "n": 27,
       "block": "D",
-      "name": "ミクロ情景",
+      "name": "二人称の情景",
       "target": 190
     },
     {
       "n": 28,
       "block": "E",
       "name": "巨視化の問い",
-      "target": 38
+      "target": 40
     },
     {
       "n": 29,
       "block": "E",
-      "name": "文明史の並列",
+      "name": "並列",
       "target": 180
     },
     {
       "n": 30,
       "block": "E",
-      "name": "歴史反転",
-      "target": 455
+      "name": "反転または起源",
+      "target": 450
     },
     {
       "n": 31,
       "block": "E",
       "name": "それでも強い理由",
-      "target": 235
+      "target": 240
     },
     {
       "n": 32,
       "block": "E",
       "name": "代償への橋渡し",
-      "target": 31
+      "target": 30
     },
     {
       "n": 33,
@@ -304,14 +305,14 @@
     {
       "n": 35,
       "block": "F",
-      "name": "実在の事件",
+      "name": "実在の事例",
       "target": 200
     },
     {
       "n": 36,
       "block": "F",
       "name": "代償の定式化",
-      "target": 80
+      "target": 90
     },
     {
       "n": 37,
@@ -323,18 +324,18 @@
       "n": 38,
       "block": "G",
       "name": "逆説の再定義",
-      "target": 160
+      "target": 145
     },
     {
       "n": 39,
       "block": "G",
-      "name": "鏡のオチ",
-      "target": 205
+      "name": "着地",
+      "target": 165
     },
     {
       "n": 40,
       "block": "G",
-      "name": "メタCTA",
+      "name": "メタCTA(原則省略)",
       "target": 65
     },
     {
@@ -427,5 +428,88 @@
     ]
   },
   "_note_twist": "41ビート設計図ではビート13終端の累積が全体の約25%に当たる。原典の分析レポートは30〜55%と記していたが、ビート配分に合わせて下限を22%に較正した。",
-  "_note_block_e": "原典はブロックEを約1,100字と記載しているが、ビート28〜32の合計は939字。ビート単位の数字を正とした。"
+  "total_target_with_beat40": 6965,
+  "paragraph_max": 41,
+  "engagement": {
+    "second_person_min": 8,
+    "second_person_pattern": "あなた|我々|私たち|てみてほしい|て欲しい|考えてみ|想像してみ",
+    "rebuttal_beats": [
+      12,
+      26
+    ],
+    "rebuttal_min": 3,
+    "rebuttal_openers": [
+      "と思うかもしれない",
+      "かもしれない",
+      "のではないか",
+      "本当にそうだろうか",
+      "待ってくれ",
+      "ではないだろうか",
+      "見えるかもしれない"
+    ],
+    "rebuttal_concessions": [
+      "その通りだ",
+      "その指摘は",
+      "その懸念は",
+      "もっともだ",
+      "確かに",
+      "正しい",
+      "事実だ",
+      "否定しない"
+    ],
+    "analogy_beat": 11,
+    "analogy_min": 3,
+    "analogy_markers": [
+      "で言えば",
+      "に例え",
+      "にたとえ",
+      "に置き換え",
+      "同じ構造",
+      "似た構造",
+      "ようなもの",
+      "に近い",
+      "に相当",
+      "言い換えれば",
+      "に当たる"
+    ],
+    "limitation_beat": 16,
+    "limitation_markers": [
+      "限界がある",
+      "再現されなかった",
+      "再現され",
+      "追試",
+      "反証",
+      "とは限らない",
+      "成り立たない",
+      "当てはまらない",
+      "議論が続いている",
+      "境界条件",
+      "説明がつかない",
+      "説明できなかった"
+    ],
+    "preview_beat": 5,
+    "preview_markers": [
+      "ひとつ",
+      "ふたつ",
+      "3つ目",
+      "三つ目",
+      "みっつ",
+      "2つ目",
+      "二つ目",
+      "つの意外"
+    ],
+    "second_person_you_pattern": "あなた",
+    "second_person_you_good": 4,
+    "analogy_good": 5
+  },
+  "ending_types": [
+    "救済型",
+    "和解型",
+    "返却型",
+    "問い型"
+  ],
+  "_note_ending": "ビート39で視聴者を断罪してはならない。高再生台本4本はいずれも武器・赦し・問いを手渡して終わる。",
+  "_note_block_d": "旧仕様の「帳簿=金の流れ」を「非対称性の解剖」へ一般化した。帳簿は非対称性の一形態である。",
+  "_note_v32": "v3.2の変更根拠は knowledge/reference-channel/script-analysis.md(高再生台本4本の本文解析)。",
+  "_note_calibration": "引き込みの3装置のしきい値は、高再生台本4本の実測から較正した。二人称(あなた/我々/私たち/〜してみてほしい)は11・15・10・12回、想定反論は3・4・5・12回、現代語への翻訳は3・6・1・5箇所。限界と反証を明示していたのは4本中1本(03)のみのため、機械監査ではWARNに留める。ただし本チャンネルの絶対規律(相関を因果と断定しない、係争中の論点は正直に書く)から、ビート16は自前の規律として必須扱いを維持する。"
 }

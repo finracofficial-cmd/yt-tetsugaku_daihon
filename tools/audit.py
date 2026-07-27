@@ -76,16 +76,17 @@ def check_length(paras, spec):
 def check_paragraphs(paras, spec, exact):
     n = len(paras)
     target = spec["paragraph_target"]
+    hi = spec.get("paragraph_max", target)
     if n == target:
-        record("PASS", f"段落数 {n}", f"目標{target}")
-    elif n == target - 1:
-        record("PASS", f"段落数 {n}", "ビート40(メタCTA)の省略とみなす")
+        record("PASS", f"段落数 {n}", f"目標{target}(ビート40のメタCTAは原則省略)")
+    elif n == hi:
+        record("PASS", f"段落数 {n}", "ビート40(メタCTA)を使う構成")
     elif n >= spec["paragraph_min"]:
         record("WARN", f"段落数 {n}", f"目標{target}。ビート対応が近似になる")
     else:
         record("FAIL", f"段落数 {n}", f"下限{spec['paragraph_min']}未満。ビートの欠落がある")
     if not exact:
-        record("WARN", "ビート対応は近似", "段落数が41でないため、以下のビート別判定は参考値")
+        record("WARN", "ビート対応は近似", f"段落数が{target}でも{hi}でもないため、以下のビート別判定は参考値")
 
 
 def check_beat_lengths(mapped, spec):
@@ -221,11 +222,89 @@ def check_style(mapped, spec):
     else:
         record("PASS", "煽り語なし", "")
 
-    second = len(re.findall(r"(欲しい|あなた|考えてみ|想像してみ)", joined))
-    if second >= 4:
-        record("PASS", f"二人称の呼びかけ {second}回", "目安4回以上")
+
+def check_engagement(mapped, spec):
+    """引き込みの3装置。高再生台本4本を貫いていた技法で、欠けると正確でも面白くない。"""
+    eng = spec.get("engagement")
+    if not eng:
+        return
+    d = dict(mapped)
+    joined = "\n".join(t for _, t in mapped)
+
+    # 1 二人称
+    lo = eng["second_person_min"]
+    n_2p = len(re.findall(eng["second_person_pattern"], joined))
+    if n_2p >= lo:
+        record("PASS", f"二人称の呼びかけ {n_2p}回", f"下限{lo}回(参照4本は11・15・10・12回)")
     else:
-        record("WARN", f"二人称の呼びかけ {second}回", "目安4回以上。ミクロ情景ごとに1回入れる")
+        record("FAIL", f"二人称の呼びかけ {n_2p}回",
+               f"下限{lo}回に{lo - n_2p}回不足。情景と問いかけを二人称で書き直す")
+    good = eng["second_person_you_good"]
+    n_you = len(re.findall(eng["second_person_you_pattern"], joined))
+    if n_you < good:
+        record("WARN", f"「あなた」自体は {n_you}回",
+               f"目安{good}回。参照4本のうち最上位の1本は「我々」中心で2回だったため、文体上の選択であって誤りではない")
+
+    # 2 想定反論 → 一部承認 → 反転
+    lo = eng["rebuttal_min"]
+    hits = []
+    for n, text in mapped:
+        opened = any(k in text for k in eng["rebuttal_openers"])
+        conceded = any(k in text for k in eng["rebuttal_concessions"])
+        if opened and conceded:
+            hits.append(n)
+    if len(hits) >= lo:
+        record("PASS", f"想定反論の往復 {len(hits)}回", "B" + " B".join(str(n) for n in hits))
+    else:
+        record("FAIL", f"想定反論の往復 {len(hits)}回",
+               f"下限{lo}回。視聴者の反論を先に代弁し、一度認めてから越える段落が足りない")
+    for n in eng["rebuttal_beats"]:
+        if n not in hits and n in d:
+            record("WARN", f"ビート{n}に想定反論の形がない", "「〜と思うかもしれない」+「その通りだ」+「だが」の3点が揃っていない")
+
+    # 3 現代語への翻訳
+    lo, good = eng["analogy_min"], eng["analogy_good"]
+    n_ana = sum(joined.count(k) for k in eng["analogy_markers"])
+    if n_ana >= good:
+        record("PASS", f"現代語への翻訳 {n_ana}箇所", f"目安{good}箇所以上")
+    elif n_ana >= lo:
+        record("WARN", f"現代語への翻訳 {n_ana}箇所",
+               f"下限{lo}は満たすが目安は{good}箇所。参照4本は3・6・1・5箇所")
+    else:
+        record("FAIL", f"現代語への翻訳 {n_ana}箇所",
+               f"下限{lo}箇所。研究や概念を出したら、その場で視聴者の日常の具体物に対応させる")
+
+    # 限界と反証。参照4本のうち明示していたのは1本のみのため、機械監査ではWARNに留める。
+    # ただし本チャンネルの絶対規律から、ビート16は自前の規律として必須扱いを維持する。
+    b = d.get(eng["limitation_beat"], "")
+    if any(k in b for k in eng["limitation_markers"]):
+        record("PASS", f"ビート{eng['limitation_beat']} 限界と反証", "追試・境界条件への言及あり")
+    else:
+        record("WARN", f"ビート{eng['limitation_beat']} に限界と反証がない",
+               "自分が出した研究の限界を自分で言う。参照4本中1本のみの技法だが、本チャンネルでは必須扱い")
+
+    # 予告リスト
+    b = d.get(eng["preview_beat"], "")
+    n_pre = sum(1 for k in eng["preview_markers"] if k in b)
+    if n_pre >= 2:
+        record("PASS", f"ビート{eng['preview_beat']} 意外な予告リスト", "列挙の形あり")
+    else:
+        record("WARN", f"ビート{eng['preview_beat']} に予告リストの形がない",
+               "「この話には3つの意外な続きがある。ひとつ〜。ふたつ〜。そして3つ目〜」")
+
+
+def check_ending(mapped, spec):
+    """ビート39で視聴者を断罪していないか(目視の補助)。"""
+    text = dict(mapped).get(39, "")
+    if not text:
+        return
+    accusing = [w for w in ("あなたもまた", "あなたも例外ではない", "あなた自身が", "あなたのその") if w in text]
+    if accusing:
+        record("WARN", "ビート39が断罪型に寄っている可能性",
+               " ".join(accusing) + " ← 矛先を返すのではなく、武器か赦しか問いを手渡す")
+    else:
+        record("PASS", "ビート39 着地", "断罪の定型句なし。型は目視で確認すること")
+
 
 
 def check_signature(paras, spec):
@@ -240,10 +319,16 @@ def check_numbers(mapped, spec):
     d = dict(mapped)
     b3 = d.get(3, "")
     nums = re.findall(r"[0-9０-９]+(?:[.,][0-9０-９]+)?", b3)
-    if len(nums) >= 3:
-        record("PASS", f"ビート3の数字 {len(nums)}個", "丸めない数字を3つ以上")
+    if len(nums) >= 2:
+        record("PASS", f"ビート3の数字 {len(nums)}個", "現象の広がりを示す丸めない数字を2つ以上")
     else:
-        record("WARN", f"ビート3の数字 {len(nums)}個", "市場規模ビートには丸めない数字を3つ以上")
+        record("WARN", f"ビート3の数字 {len(nums)}個",
+               "現象の広がりのビートには丸めない数字を2つ以上。金額でなくN数・率・件数・種数でよい")
+
+    b1 = d.get(1, "")
+    if re.search(r"[0-9０-９]", b1):
+        record("WARN", "ビート1に数字がある",
+               "開幕の一撃は情景か逆説の一行にする。統計・金額から始めない")
 
 
 def print_verbose(mapped, spec):
@@ -292,6 +377,8 @@ def main():
     check_numbers(mapped, spec)
     check_tts(paras, spec)
     check_style(mapped, spec)
+    check_engagement(mapped, spec)
+    check_ending(mapped, spec)
     check_signature(paras, spec)
 
     print(f"監査対象: {args.path}")

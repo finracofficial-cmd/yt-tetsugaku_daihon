@@ -8,8 +8,8 @@
     python3 tools/timestamps.py output/<dir>/03_台本.txt
     python3 tools/timestamps.py output/<dir>/03_台本.txt --rate 340
 
-読み上げ速度の既定値327字/分は、参照台本A〜Dのタイムスタンプから実測した値
-(311〜340字/分)の平均。話者や編集の間の取り方で前後するため、**書き出した
+読み上げ速度の既定値327字/分は、参照台本8本(A〜Dと reference-scripts/viral の
+4本)のタイムスタンプから実測した値(305〜349字/分)の平均。話者や編集の間の取り方で前後するため、**書き出した
 動画の実尺で必ず補正すること。** このツールが出すのは初稿の目安である。
 """
 
@@ -23,9 +23,9 @@ CHAPTERS = [
     ("Prologue",  1,  6),   # ブロックA フック
     ("Chapter 1", 7,  13),  # ブロックB 通説の解体
     ("Chapter 2", 14, 20),  # ブロックC メカニズムの解剖
-    ("Chapter 3", 21, 27),  # ブロックD 帳簿
-    ("Chapter 4", 28, 36),  # ブロックE 文明史 + F 代償
-    ("Epilogue",  37, 41),  # ブロックG 回収と鏡
+    ("Chapter 3", 21, 27),  # ブロックD 非対称性の解剖
+    ("Chapter 4", 28, 36),  # ブロックE 巨視化 + F 代償
+    ("Epilogue",  37, 41),  # ブロックG 回収と着地
 ]
 
 DEFAULT_RATE = 327.0  # 字/分
@@ -53,8 +53,8 @@ def main():
     if n < 38:
         print(f"段落数が {n} しかない。先に tools/audit.py を通すこと", file=sys.stderr)
         return 1
-    if n != 41:
-        print(f"注意: 段落数が {n} で41でないため、ビート対応が近似になる\n", file=sys.stderr)
+    if n not in (40, 41):
+        print(f"注意: 段落数が {n} で40でも41でもないため、ビート対応が近似になる\n", file=sys.stderr)
 
     counts = [body_len(p) for p in paras]
     total = sum(counts)
