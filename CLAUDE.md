@@ -36,6 +36,7 @@ Claude Code でこのリポジトリを開き、次のいずれかを言う。
 ```bash
 python3 tools/audit.py output/<ディレクトリ>/03_台本.txt
 python3 tools/audit.py output/<ディレクトリ>/03_台本.txt --verbose   # ビート別字数一覧
+python3 tools/timestamps.py output/<ディレクトリ>/03_台本.txt  # 概要欄のタイムスタンプ
 ```
 
 判定基準は `tools/beats.json`。目視でしか測れない項目は `.claude/skills/daihon/references/audit.md`。
