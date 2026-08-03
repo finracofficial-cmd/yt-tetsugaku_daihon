@@ -208,6 +208,8 @@ def check_style(mapped, spec):
         if n in allowed:
             continue
         t = strip_quotes(text)
+        # 「目を覚ます」「湯を冷ます」など、丁寧語ではない動詞の誤検出を除く
+        t = re.sub(r"(覚|冷|励|澄|済|醒|欺|研)ます", "", t)
         if re.search(r"(です|ます|ください|ましょう)[。、]", t):
             polite.append(f"B{n}")
     if polite:
