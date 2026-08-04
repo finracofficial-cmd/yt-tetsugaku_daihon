@@ -249,11 +249,13 @@ def check_engagement(mapped, spec):
 
     # 2 想定反論 → 一部承認 → 反転
     lo = eng["rebuttal_min"]
+    # 代弁+反転で成立とする。承認句は必須ではない(参照4本は反論のたびに承認を置かない)
+    turns = eng.get("rebuttal_turns", ["だが", "ところが", "しかし"])
     hits = []
     for n, text in mapped:
         opened = any(k in text for k in eng["rebuttal_openers"])
-        conceded = any(k in text for k in eng["rebuttal_concessions"])
-        if opened and conceded:
+        turned = any(k in text for k in turns) or any(k in text for k in eng["rebuttal_concessions"])
+        if opened and turned:
             hits.append(n)
     if len(hits) >= lo:
         record("PASS", f"想定反論の往復 {len(hits)}回", "B" + " B".join(str(n) for n in hits))
@@ -262,7 +264,7 @@ def check_engagement(mapped, spec):
                f"下限{lo}回。視聴者の反論を先に代弁し、一度認めてから越える段落が足りない")
     for n in eng["rebuttal_beats"]:
         if n not in hits and n in d:
-            record("WARN", f"ビート{n}に想定反論の形がない", "「〜と思うかもしれない」+「その通りだ」+「だが」の3点が揃っていない")
+            record("WARN", f"ビート{n}に想定反論の形がない", "「〜と思うかもしれない」と「だが」の組が無い")
 
     # 3 現代語への翻訳
     lo, good = eng["analogy_min"], eng["analogy_good"]
@@ -293,6 +295,48 @@ def check_engagement(mapped, spec):
     else:
         record("WARN", f"ビート{eng['preview_beat']} に予告リストの形がない",
                "「この話には3つの意外な続きがある。ひとつ〜。ふたつ〜。そして3つ目〜」")
+
+
+def check_meta(mapped, spec):
+    """設計図を音読する言い回しの検出。参照4本は本編でこれをやらない。"""
+    eng = spec.get("engagement") or {}
+    if "meta_markers" not in eng:
+        return
+    allowed = set(eng.get("meta_allowed_beats", []))
+    hits = []
+    for n, text in mapped:
+        if n in allowed:
+            continue
+        for k in eng["meta_markers"]:
+            if k in text:
+                hits.append(f"B{n}「{k}」")
+    lo = eng.get("meta_max_outside", 2)
+    if len(hits) <= lo:
+        record("PASS", f"メタ発話 {len(hits)}件", f"許容{lo}件(参照4本は本編でほぼ使わない)")
+    else:
+        record("FAIL", f"メタ発話が多すぎる {len(hits)}件",
+               " ".join(hits[:8]) + f" ← 許容{lo}件。設計図を音読せず、内容で転換する")
+
+    # 承認句の過剰(参照は反論3回に対し承認1回程度)
+    cmax = eng.get("concession_max")
+    if cmax:
+        # 地の文の「確かに」「正しい」は装置ではない。反論の代弁を含む段落だけを数える
+        c = sum(1 for _, t in mapped
+                if any(k in t for k in eng["rebuttal_openers"])
+                and any(k in t for k in eng["rebuttal_concessions"]))
+        if c > cmax:
+            record("WARN", f"承認句のある段落 {c}件",
+                   f"目安{cmax}件。毎回«その指摘は正しい»を置くと定型に見える")
+
+    # 一文が長すぎないか
+    smax = eng.get("sentence_max")
+    if smax:
+        longest = 0
+        for _, t in mapped:
+            for s in re.split(r"(?<=。)", t):
+                longest = max(longest, body_len(s))
+        if longest > smax:
+            record("WARN", f"最長の一文 {longest}字", f"目安{smax}字以内")
 
 
 def check_ending(mapped, spec):
@@ -380,6 +424,7 @@ def main():
     check_tts(paras, spec)
     check_style(mapped, spec)
     check_engagement(mapped, spec)
+    check_meta(mapped, spec)
     check_ending(mapped, spec)
     check_signature(paras, spec)
 

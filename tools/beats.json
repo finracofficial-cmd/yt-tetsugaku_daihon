@@ -1,7 +1,7 @@
 {
   "version": "3.2",
-  "total_target": 6900,
-  "body_min": 6000,
+  "total_target": 6298,
+  "body_min": 5800,
   "body_max_soft": 7600,
   "paragraph_target": 40,
   "paragraph_min": 38,
@@ -45,7 +45,7 @@
         1,
         6
       ],
-      "target": 820
+      "target": 750
     },
     "B": {
       "name": "通説の解体",
@@ -53,7 +53,7 @@
         7,
         13
       ],
-      "target": 1150
+      "target": 1048
     },
     "C": {
       "name": "メカニズムの解剖",
@@ -61,7 +61,7 @@
         14,
         20
       ],
-      "target": 1430
+      "target": 1305
     },
     "D": {
       "name": "非対称性の解剖",
@@ -69,7 +69,7 @@
         21,
         27
       ],
-      "target": 1240
+      "target": 1131
     },
     "E": {
       "name": "巨視化と反転",
@@ -77,7 +77,7 @@
         28,
         32
       ],
-      "target": 940
+      "target": 858
     },
     "F": {
       "name": "代償の実測",
@@ -85,7 +85,7 @@
         33,
         36
       ],
-      "target": 610
+      "target": 558
     },
     "G": {
       "name": "回収と着地",
@@ -93,8 +93,8 @@
         37,
         41
       ],
-      "target": 775,
-      "target_without_beat40": 710
+      "target": 707,
+      "target_without_beat40": 648
     }
   },
   "beats": [
@@ -102,247 +102,247 @@
       "n": 1,
       "block": "A",
       "name": "開幕の一撃(情景か逆説)",
-      "target": 45
+      "target": 41
     },
     {
       "n": 2,
       "block": "A",
       "name": "情景の展開(二人称)",
-      "target": 200
+      "target": 183
     },
     {
       "n": 3,
       "block": "A",
       "name": "現象の広がりと数字",
-      "target": 160
+      "target": 146
     },
     {
       "n": 4,
       "block": "A",
       "name": "世間の認識の代弁",
-      "target": 60
+      "target": 55
     },
     {
       "n": 5,
       "block": "A",
       "name": "意外な予告リスト",
-      "target": 235
+      "target": 215
     },
     {
       "n": 6,
       "block": "A",
       "name": "中心の問いと学問の宣言",
-      "target": 120
+      "target": 110
     },
     {
       "n": 7,
       "block": "B",
       "name": "通説の提示",
-      "target": 45
+      "target": 41
     },
     {
       "n": 8,
       "block": "B",
       "name": "通説の一部を認める",
-      "target": 110
+      "target": 100
     },
     {
       "n": 9,
       "block": "B",
       "name": "主役研究1",
-      "target": 220
+      "target": 201
     },
     {
       "n": 10,
       "block": "B",
       "name": "主役研究2で深掘る",
-      "target": 340
+      "target": 310
     },
     {
       "n": 11,
       "block": "B",
       "name": "現代語への翻訳",
-      "target": 110
+      "target": 100
     },
     {
       "n": 12,
       "block": "B",
       "name": "想定反論1",
-      "target": 145
+      "target": 132
     },
     {
       "n": 13,
       "block": "B",
       "name": "裏切り予告",
-      "target": 180
+      "target": 164
     },
     {
       "n": 14,
       "block": "C",
       "name": "主役研究3",
-      "target": 210
+      "target": 192
     },
     {
       "n": 15,
       "block": "C",
       "name": "別角度からの検証",
-      "target": 230
+      "target": 210
     },
     {
       "n": 16,
       "block": "C",
       "name": "限界と反証",
-      "target": 195
+      "target": 178
     },
     {
       "n": 17,
       "block": "C",
       "name": "飛び道具",
-      "target": 340
+      "target": 310
     },
     {
       "n": 18,
       "block": "C",
       "name": "現象への接続",
-      "target": 160
+      "target": 146
     },
     {
       "n": 19,
       "block": "C",
       "name": "二人称の情景",
-      "target": 110
+      "target": 100
     },
     {
       "n": 20,
       "block": "C",
       "name": "冒頭の伏線を回収",
-      "target": 185
+      "target": 169
     },
     {
       "n": 21,
       "block": "D",
       "name": "視点転換の宣言",
-      "target": 35
+      "target": 32
     },
     {
       "n": 22,
       "block": "D",
       "name": "非対称の提示",
-      "target": 195
+      "target": 178
     },
     {
       "n": 23,
       "block": "D",
       "name": "悪玉回避",
-      "target": 165
+      "target": 151
     },
     {
       "n": 24,
       "block": "D",
       "name": "隠れた構造",
-      "target": 355
+      "target": 324
     },
     {
       "n": 25,
       "block": "D",
       "name": "視聴者参加の問い",
-      "target": 190
+      "target": 173
     },
     {
       "n": 26,
       "block": "D",
       "name": "想定反論2",
-      "target": 110
+      "target": 100
     },
     {
       "n": 27,
       "block": "D",
       "name": "二人称の情景",
-      "target": 190
+      "target": 173
     },
     {
       "n": 28,
       "block": "E",
       "name": "巨視化の問い",
-      "target": 40
+      "target": 37
     },
     {
       "n": 29,
       "block": "E",
       "name": "並列",
-      "target": 180
+      "target": 164
     },
     {
       "n": 30,
       "block": "E",
       "name": "反転または起源",
-      "target": 450
+      "target": 411
     },
     {
       "n": 31,
       "block": "E",
       "name": "それでも強い理由",
-      "target": 240
+      "target": 219
     },
     {
       "n": 32,
       "block": "E",
       "name": "代償への橋渡し",
-      "target": 30
+      "target": 27
     },
     {
       "n": 33,
       "block": "F",
       "name": "定量データ",
-      "target": 235
+      "target": 215
     },
     {
       "n": 34,
       "block": "F",
       "name": "理由の説明",
-      "target": 85
+      "target": 78
     },
     {
       "n": 35,
       "block": "F",
       "name": "実在の事例",
-      "target": 200
+      "target": 183
     },
     {
       "n": 36,
       "block": "F",
       "name": "代償の定式化",
-      "target": 90
+      "target": 82
     },
     {
       "n": 37,
       "block": "G",
       "name": "全ブロック回収",
-      "target": 335
+      "target": 306
     },
     {
       "n": 38,
       "block": "G",
       "name": "逆説の再定義",
-      "target": 145
+      "target": 132
     },
     {
       "n": 39,
       "block": "G",
       "name": "着地",
-      "target": 165
+      "target": 151
     },
     {
       "n": 40,
       "block": "G",
       "name": "メタCTA(原則省略)",
-      "target": 65
+      "target": 59
     },
     {
       "n": 41,
       "block": "G",
       "name": "シグネチャ",
-      "target": 65
+      "target": 59
     }
   ],
   "tts": {
@@ -506,7 +506,31 @@
     ],
     "second_person_you_pattern": "あなた",
     "second_person_you_good": 4,
-    "analogy_good": 5
+    "analogy_good": 5,
+    "meta_allowed_beats": [
+      6
+    ],
+    "meta_markers": [
+      "この動画",
+      "ここで、",
+      "てみたい。",
+      "振り返ろう",
+      "問いを出したい",
+      "見てみたい。",
+      "崩しておきたい",
+      "言いたいのは"
+    ],
+    "meta_max_outside": 2,
+    "concession_max": 2,
+    "sentence_max": 230,
+    "rebuttal_turns": [
+      "だが",
+      "ところが",
+      "しかし",
+      "それでも",
+      "ただ"
+    ],
+    "_note_rebuttal": "反論の判定は「代弁+反転」で成立とする。承認句は必須ではない。参照4本の実測は反論3〜12回に対し承認句のある区間は平均0.18で、反論のたびに承認は置いていない。"
   },
   "ending_types": [
     "救済型",
@@ -517,5 +541,6 @@
   "_note_ending": "ビート39で視聴者を断罪してはならない。高再生台本4本はいずれも武器・赦し・問いを手渡して終わる。",
   "_note_block_d": "旧仕様の「帳簿=金の流れ」を「非対称性の解剖」へ一般化した。帳簿は非対称性の一形態である。",
   "_note_v32": "v3.2の変更根拠は knowledge/reference-channel/script-analysis.md(高再生台本4本の本文解析)。",
-  "_note_calibration": "引き込みの3装置のしきい値は、高再生台本4本の実測から較正した。二人称(あなた/我々/私たち/〜してみてほしい)は11・15・10・12回、想定反論は3・4・5・12回、現代語への翻訳は3・6・1・5箇所。限界と反証を明示していたのは4本中1本(03)のみのため、機械監査ではWARNに留める。ただし本チャンネルの絶対規律(相関を因果と断定しない、係争中の論点は正直に書く)から、ビート16は自前の規律として必須扱いを維持する。"
+  "_note_calibration": "引き込みの3装置のしきい値は、高再生台本4本の実測から較正した。二人称(あなた/我々/私たち/〜してみてほしい)は11・15・10・12回、想定反論は3・4・5・12回、現代語への翻訳は3・6・1・5箇所。限界と反証を明示していたのは4本中1本(03)のみのため、機械監査ではWARNに留める。ただし本チャンネルの絶対規律(相関を因果と断定しない、係争中の論点は正直に書く)から、ビート16は自前の規律として必須扱いを維持する。",
+  "_note_structure": "参照4本と自作を10区間に割って比較した実測(2026年8月)。メタ発話は参照0.09に対し自作0.82で9倍、承認句は0.18に対し0.55で3倍、文数は174〜206に対し279だった。参照はメタ発話をPrologueに1回だけ置き、本編では一切やらない。回収も「振り返ろう」ではなく冒頭の情景に戻ってから発見を並べる形で行う。"
 }
