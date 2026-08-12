@@ -142,7 +142,7 @@ def main():
 
     rows = []
     for fn in sorted(os.listdir(args.dir)):
-        if not fn.endswith(".txt") or fn == "index.tsv":
+        if not fn.endswith(".txt") or fn in ("index.tsv", "views.txt"):
             continue
         r = profile(os.path.join(args.dir, fn))
         if r:

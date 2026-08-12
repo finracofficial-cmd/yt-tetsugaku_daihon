@@ -23,6 +23,8 @@ NUM = re.compile(r"[0-9０-９]")
 def load():
     out = []
     for p in sorted(glob.glob(os.path.join(DIR, "*.txt"))):
+        if os.path.basename(p) == "views.txt":   # 取得メタデータ。台本ではない
+            continue
         lines = [l for l in open(p, encoding="utf-8").read().split("\n") if l.strip()]
         if len(lines) < 3:
             continue
