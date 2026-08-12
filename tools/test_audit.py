@@ -95,8 +95,9 @@ def build(**defect):
     if defect.get("too_many_sentences"):
         for i in range(6, 34):
             p[i] = p[i] + "そこに値札がついている。" * 4
-    if defect.get("open_number"):
-        p[1] = pad("3人に1人が、同じ場面で立ち止まる。", 160)
+    if defect.get("too_short"):
+        for i in range(6, 34):
+            p[i] = p[i][:60]
     if defect.get("no_signature"):
         p[40] = "おわり。またお会いしましょう。"
     if defect.get("forbidden_char"):
@@ -131,7 +132,7 @@ def main():
         ("long_study_run", "研究文の長すぎる連続", "研究文の最長連続"),
         ("too_many_meta", "メタ発話の過剰", "メタ発話が多すぎる"),
         ("too_many_sentences", "文数の過剰", "総文数"),
-        ("open_number", "冒頭の数字", "冒頭に数字がある"),
+        ("too_short", "字数の不足", "本文の総字数"),
         ("no_signature", "シグネチャの欠落", "シグネチャが末尾にない"),
         ("forbidden_char", "禁止記号", "禁止記号を検出"),
     ]

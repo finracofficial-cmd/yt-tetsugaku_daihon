@@ -78,6 +78,7 @@ tools/
   test_audit.py               監査の自己テスト
   subs_to_text.py             YouTube自動字幕(json3)を解析用テキストへ変換
   analyze_refs.py             参照台本の構造を一括実測(較正の元になる数字を出す)
+  extract_phrasebook.py       参照92本から話法辞典を抽出
   build_project_instructions.py  Claudeプロジェクト用の1枚指示書を生成
 dist/
   project-instructions.md     上の生成物。Claude Projectの「指示」欄に貼る用
@@ -86,6 +87,7 @@ knowledge/
   reference-scripts/A〜D.md   高再生台本4本(自動文字起こし。文体参照のみ)
   reference-scripts/viral/    高再生台本4本の全文。v3.2〜v4.0の解析対象
   reference-channel/          参照Chの実測(タイトル・サムネ・概要欄・構造解析・本文解析・v5.0較正)
+  reference-channel/phrasebook.md  話法辞典。参照92本の言い回しを用途別に抜粋
   sample/                     v2期のテスト台本(制作メモの形式参照のみ)
 docs/                         原典(チャンネル分析・v3.1指示書・自己改善レポート)
 output/                       生成物
