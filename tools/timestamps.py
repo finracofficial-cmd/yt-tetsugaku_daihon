@@ -18,14 +18,15 @@ import os
 import re
 import sys
 
-# 41ビートを概要欄の6ブロックへ束ねる。(章名, 開始ビート, 終了ビート)
+# 40段落を概要欄の6ブロックへ束ねる。(章名, 開始段落, 終了段落)
+# v4.0の三層に対応する。Prologue=開幕、Chapter 1〜4=展開部を4等分、Epilogue=着地。
 CHAPTERS = [
-    ("Prologue",  1,  6),   # ブロックA フック
-    ("Chapter 1", 7,  13),  # ブロックB 通説の解体
-    ("Chapter 2", 14, 20),  # ブロックC メカニズムの解剖
-    ("Chapter 3", 21, 27),  # ブロックD 非対称性の解剖
-    ("Chapter 4", 28, 36),  # ブロックE 巨視化 + F 代償
-    ("Epilogue",  37, 41),  # ブロックG 回収と着地
+    ("Prologue",  1,  5),   # 開幕
+    ("Chapter 1", 6,  12),  # 展開 1
+    ("Chapter 2", 13, 19),  # 展開 2
+    ("Chapter 3", 20, 26),  # 展開 3
+    ("Chapter 4", 27, 33),  # 展開 4
+    ("Epilogue",  34, 41),  # 着地
 ]
 
 DEFAULT_RATE = 327.0  # 字/分
