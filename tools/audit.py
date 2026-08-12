@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""台本の機械監査 v4.0(工程4・第1段階)
+"""台本の機械監査 v5.0(工程4・第1段階)
 
 使い方:
     python3 tools/audit.py output/<dir>/03_台本.txt
@@ -8,9 +8,14 @@
 入力は本文のみのプレーンテキスト。段落は空行で区切る。
 FAILが1つでもあれば終了コード1を返す。
 
-v4.0で判定の軸が変わった。ビート番号ごとの目標字数ではなく、
-参照4本から実測できた「7つの錨」と「分布のノルマ」で見る。
-根拠は knowledge/reference-channel/script-analysis.md の v4.0 導出節。
+判定は2群に分かれる。
+
+  模倣  参照チャンネル全92本の分布(p10〜p90)に合わせる帯
+  自前  参照とは意図的にずらしている本チャンネルの規律
+
+しきい値は「再生数を上げる条件」ではない。全92本で18指標と再生数の
+順位相関を取ったが、多重比較の補正後に有意なものは一つも無かった。
+根拠は knowledge/reference-channel/script-analysis.md の v5.0 較正節。
 """
 
 import argparse
@@ -72,27 +77,35 @@ def in_range(i, rng, paras):
 
 def check_length(paras, spec):
     total = sum(body_len(p) for p in paras)
-    lo, hi = spec["body_min"], spec["body_max_soft"]
-    if total < lo:
-        record("FAIL", f"本文の総字数 {total:,}字", f"下限{lo:,}字に{lo - total:,}字不足。増築が必要")
+    if total < spec["body_min"] or total > spec["body_max"]:
+        record("FAIL", f"本文の総字数 {total:,}字",
+               f"許容{spec['body_min']:,}〜{spec['body_max']:,}字。参照92本の実測は3,043〜9,735字")
+    elif total < spec["body_soft_min"] or total > spec["body_max_soft"]:
+        record("WARN", f"本文の総字数 {total:,}字",
+               f"目安{spec['body_soft_min']:,}〜{spec['body_max_soft']:,}字(参照92本の中央値6,446字)")
     else:
-        record("PASS", f"本文の総字数 {total:,}字", f"下限{lo:,}字 目安{spec['body_target']:,}字")
-    if total > hi:
-        record("WARN", f"総字数が目安上限を超過 {total:,}字",
-               f"目安上限{hi:,}字。参照4本は4,992〜7,064字")
+        record("PASS", f"本文の総字数 {total:,}字", f"目安{spec['body_target']:,}字")
     return total
 
 
 def check_sentences(paras, spec):
-    n = sum(len(split_sentences(p)) for p in paras)
-    lo, hi = spec["sentence_target_min"], spec["sentence_target_max"]
-    if lo <= n <= hi:
-        record("PASS", f"総文数 {n}文", f"目安{lo}〜{hi}文(参照4本は175・178・191・206文)")
-    elif n > hi:
-        record("WARN", f"総文数 {n}文",
-               f"目安上限{hi}文を超過。参照との差は研究の数ではなく文の量に出る。地の文を削る")
+    sents = [s for p in paras for s in split_sentences(p)]
+    n = len(sents)
+    lo, hi = spec["sentence_soft_min"], spec["sentence_soft_max"]
+    if n < spec["sentence_min"] or n > spec["sentence_max_total"]:
+        record("FAIL", f"総文数 {n}文",
+               f"許容{spec['sentence_min']}〜{spec['sentence_max_total']}文。参照92本は93〜288文")
+    elif lo <= n <= hi:
+        record("PASS", f"総文数 {n}文", f"目安{lo}〜{hi}文(参照92本の中央値186文)")
     else:
-        record("WARN", f"総文数 {n}文", f"目安下限{lo}文を下回る")
+        record("WARN", f"総文数 {n}文", f"目安{lo}〜{hi}文(参照92本の中央値186文)")
+
+    med = sorted(body_len(s) for s in sents)[n // 2] if n else 0
+    mlo, mhi = spec["sentence_len_med_min"], spec["sentence_len_med_max"]
+    if mlo <= med <= mhi:
+        record("PASS", f"一文の長さの中央値 {med}字", f"目安{mlo}〜{mhi}字(参照92本の中央値31字)")
+    else:
+        record("WARN", f"一文の長さの中央値 {med}字", f"目安{mlo}〜{mhi}字(参照92本の中央値31字)")
     return n
 
 
@@ -163,7 +176,7 @@ def check_open(paras, spec):
     p1 = paras[0]
     if re.search(r"[0-9０-９]", p1):
         record("FAIL", "冒頭に数字がある",
-               "開幕の一撃は情景か逆説の一行にする。参照4本のいずれも数字で始まっていない")
+               "開幕の一撃は情景か逆説の一行にする。参照の上位回はいずれも数字で始まっていない")
     else:
         record("PASS", "冒頭の一撃", "数字で始めていない")
 
@@ -180,15 +193,13 @@ def check_first_data(paras, spec, total):
     if hit_i is None:
         record("FAIL", "実データが一度も出てこない", "研究・統計を入れる")
         return
-    lo, hi = scale(paras, next(a["paras"] for a in spec["anchors"] if a["id"] == "first_data"))
+    late = spec["imitation"]["first_data_late_ratio"]
     label = f"最初の実データ P{hit_i}({hit_ratio*100:.0f}パーセント地点)"
-    if lo <= hit_i <= hi:
-        record("PASS", label, "参照4本は7・8・7・17パーセント地点")
-    elif hit_i < lo:
+    if hit_ratio > late:
         record("WARN", label,
-               f"早すぎる。参照は7〜17パーセントまで情景と逆説で引っぱる。目安はP{lo}〜P{hi}")
+               f"遅い。参照92本の中央値は3パーセント地点、最も遅い回でも20パーセント地点")
     else:
-        record("WARN", label, f"遅い。目安はP{lo}〜P{hi}")
+        record("PASS", label, "参照92本の中央値は3パーセント地点。早く出してよい")
 
 
 def _tokens(text):
@@ -223,10 +234,11 @@ def check_callback(paras, spec):
             best, best_i = k, i
     if best >= 2:
         record("PASS", f"冒頭の情景への回帰 P{best_i}",
-               f"共通語{best}語。参照4本は88・90・90・91パーセント地点で全本が実行")
+               f"共通語{best}語。参照92本のうち47本(51パーセント)が実行、位置の中央値は90パーセント地点")
     else:
-        record("FAIL", f"着地帯(P{lo}〜P{hi})に冒頭への回帰がない",
-               "「振り返ろう」と言わず、冒頭の情景そのものに戻ってから発見を並べ直す")
+        record("WARN", f"着地帯(P{lo}〜P{hi})に冒頭への回帰が見つからない",
+               "参照でも実行は51パーセントで必須ではない。入れるなら「振り返ろう」と言わず、"
+               "冒頭の情景そのものに戻ってから発見を並べ直す")
 
 
 def check_signature(paras, spec):
@@ -252,7 +264,13 @@ def check_ending(paras, spec):
 # --------------------------------------------------------------------------
 
 def check_study_distribution(paras, spec):
-    d = spec["distribution"]
+    """研究の連続と散らばり。v5.0で大きく緩めた項目である。
+
+    v4.0では参照4本の実測(最長2文)から「3文以上続けない」を規律にしていたが、
+    全92本では中央値3文・p90が5文・最大8文だった。4本が偶然短かっただけである。
+    「研究ゼロの区間を必ず作る」も同様で、92本中22本は0区間だった。
+    """
+    im = spec["imitation"]
     study = re.compile(spec["patterns"]["study"])
     sents = [s for p in paras for s in split_sentences(p)]
     n = len(sents)
@@ -261,54 +279,53 @@ def check_study_distribution(paras, spec):
     for s in sents:
         run = run + 1 if study.search(s) else 0
         best = max(best, run)
-    lim = d["study_run_max"]
-    if best <= lim:
-        record("PASS", f"研究文の最長連続 {best}文", f"上限{lim}文(参照4本は1・2・2・2文)")
-    elif best == lim + 1:
+    soft, hard = im["study_run_soft_max"], im["study_run_hard_max"]
+    if best <= soft:
+        record("PASS", f"研究文の最長連続 {best}文",
+               f"目安{soft}文以内(参照92本は中央値3文、p90が5文)")
+    elif best <= hard:
         record("WARN", f"研究文の最長連続 {best}文",
-               f"上限{lim}文。参照は研究を3文以上続けたことが一度も無い。間に地の文か翻訳を挟む")
+               f"目安{soft}文(参照のp90)を超える。間に意味づけの地の文を挟んで割る")
     else:
         record("FAIL", f"研究文の最長連続 {best}文",
-               f"上限{lim}文。データの塊が大きすぎる。間に意味づけの地の文を挟んで割る")
+               f"上限{hard}文(参照92本の最大値)を超えている。データの塊が大きすぎる")
 
-    occupied = set()
-    for i, s in enumerate(sents):
-        if study.search(s):
-            occupied.add(min(9, int(i / n * 10)))
+    occupied = {min(9, int(i / n * 10)) for i, s in enumerate(sents) if study.search(s)}
     free = 10 - len(occupied)
-    if free >= d["study_free_deciles_min"]:
-        record("PASS", f"研究の出てこない区間 {free}/10",
-               f"下限{d['study_free_deciles_min']}区間(参照4本は1・2・3・4区間)")
+    lo = im["study_deciles_min"]
+    if len(occupied) >= lo:
+        record("PASS", f"研究のある区間 {len(occupied)}/10",
+               f"下限{lo}区間(参照92本は中央値9区間)。研究ゼロの区間は{free}個"
+               f"(参照は中央値1個、92本中22本は0個)")
     else:
-        record("FAIL", f"研究の出てこない区間 {free}/10",
-               f"下限{d['study_free_deciles_min']}区間。参照は10区間のうち1〜4区間を"
-               "情景と地の文だけで進む。全区間にデータを敷き詰めると聞き手が休めない")
+        record("WARN", f"研究のある区間 {len(occupied)}/10",
+               f"下限{lo}区間。参照92本の中央値は9区間で、データはむしろ全体に散っている")
 
 
 def check_scene(paras, spec):
-    d = spec["distribution"]
+    im = spec["imitation"]
     scene = re.compile(spec["patterns"]["scene"])
     hits = [i for i, p in enumerate(paras, 1) if scene.search(p)]
-    op = [i for i in hits if in_range(i, d["scene_open_paras"], paras)]
-    mid = [i for i in hits if in_range(i, d["scene_mid_paras"], paras)]
-    cl = [i for i in hits if in_range(i, d["scene_close_paras"], paras)]
+    op = [i for i in hits if in_range(i, im["scene_open_paras"], paras)]
+    mid = [i for i in hits if in_range(i, im["scene_mid_paras"], paras)]
+    cl = [i for i in hits if in_range(i, im["scene_close_paras"], paras)]
     bad = []
     if not op:
         bad.append("開幕に情景が無い")
-    if len(mid) < d["scene_mid_min"]:
-        bad.append(f"中盤の情景が{len(mid)}件(下限{d['scene_mid_min']}件)")
+    if len(mid) < im["scene_mid_min"]:
+        bad.append(f"中盤の情景が{len(mid)}件(下限{im['scene_mid_min']}件)")
     if not cl:
         bad.append("終盤に情景が無い")
     if bad:
         record("WARN", "情景の三点配置が崩れている",
-               " / ".join(bad) + " ← 参照4本はいずれも 冒頭・中盤・終盤 に情景を持つ")
+               " / ".join(bad) + " ← 参照92本の中盤の情景は中央値3件")
     else:
         record("PASS", f"情景の三点配置 開幕{len(op)}・中盤{len(mid)}・終盤{len(cl)}",
-               "中盤の情景は冒頭とは別の場面にする")
+               f"中盤の目安は{im['scene_mid_good']}件(参照92本の中央値)")
 
 
 def check_rebuttal(paras, spec):
-    d = spec["distribution"]
+    ed = spec["editorial"]
     hits = []
     for i, p in enumerate(paras, 1):
         opened = any(k in p for k in spec["rebuttal_openers"])
@@ -316,94 +333,112 @@ def check_rebuttal(paras, spec):
                   or any(k in p for k in spec["rebuttal_concessions"]))
         if opened and turned:
             hits.append(i)
-    lo = d["rebuttal_min"]
+    lo = ed["rebuttal_min"]
     if len(hits) >= lo:
         record("PASS", f"想定反論の往復 {len(hits)}回", "P" + " P".join(str(i) for i in hits))
     else:
-        record("FAIL", f"想定反論の往復 {len(hits)}回",
-               f"下限{lo}回。視聴者の反論を先に代弁し、越える段落が足りない")
+        record("WARN", f"想定反論の往復 {len(hits)}回",
+               f"自前の下限{lo}回(参照92本の中央値も3回)。視聴者の反論を代弁して越える段落を足す")
 
-    late_lo, _ = scale(paras, [d["rebuttal_late_from_para"], 40])
+    late_lo, _ = scale(paras, [ed["rebuttal_late_from_para"], 40])
     late = [i for i in hits if i >= late_lo]
-    if len(late) >= d["rebuttal_late_min"]:
+    if len(late) >= ed["rebuttal_late_min"]:
         record("PASS", f"後半の反論 {len(late)}回", f"P{late_lo}以降")
     else:
-        record("WARN", "後半3割に反論が無い",
-               f"P{late_lo}以降に1回。参照4本のうち3本が終盤にも反論を残している")
+        record("WARN", "後半3割に反論が無い", f"P{late_lo}以降に1回(参照92本の中央値も1回)")
 
     c = sum(1 for p in paras
             if any(k in p for k in spec["rebuttal_openers"])
             and any(k in p for k in spec["rebuttal_concessions"]))
-    if c > d["concession_max"]:
+    if c > ed["concession_max"]:
         record("WARN", f"承認句のある段落 {c}件",
-               f"目安{d['concession_max']}件。毎回«その指摘は正しい»を置くと装置が透ける")
+               f"自前の目安{ed['concession_max']}件(参照92本のp90は3件)。"
+               "毎回«その指摘は正しい»を置くと装置が透ける")
 
 
 def check_translation(paras, spec):
-    d = spec["distribution"]
+    """現代語への翻訳。参照の中央値は1箇所で、これは自前の規律である。"""
+    ed = spec["editorial"]
     joined = "\n".join(paras)
     n = sum(joined.count(k) for k in spec["analogy_markers"])
-    lo, good = d["analogy_min"], d["analogy_good"]
+    lo, good = ed["analogy_min"], ed["analogy_good"]
     if n >= good:
-        record("PASS", f"現代語への翻訳 {n}箇所", f"目安{good}箇所以上")
+        record("PASS", f"現代語への翻訳 {n}箇所", f"自前の目安{good}箇所以上")
     elif n >= lo:
-        record("WARN", f"現代語への翻訳 {n}箇所", f"下限{lo}は満たすが目安は{good}箇所")
+        record("PASS", f"現代語への翻訳 {n}箇所", f"自前の下限{lo}箇所は満たす。目安は{good}箇所")
     else:
-        record("FAIL", f"現代語への翻訳 {n}箇所",
-               f"下限{lo}箇所。研究や概念を出したら、その場で視聴者の日常の具体物に対応させる")
+        record("WARN", f"現代語への翻訳 {n}箇所",
+               f"自前の下限{lo}箇所。参照92本の中央値は1箇所で、ここは意図的に参照より多く取る。"
+               "研究や概念を出したら、その場で視聴者の日常の具体物に対応させる")
 
 
 def check_second_person(paras, spec):
-    d = spec["distribution"]
+    ed = spec["editorial"]
     joined = "\n".join(paras)
     n = len(re.findall(spec["patterns"]["second_person"], joined))
-    lo = d["second_person_min"]
+    lo = ed["second_person_min"]
     if n >= lo:
-        record("PASS", f"二人称の呼びかけ {n}回", f"下限{lo}回(参照4本は10・11・12・15回)")
+        record("PASS", f"二人称の呼びかけ {n}回", f"自前の下限{lo}回(参照92本の中央値12回)")
     else:
-        record("FAIL", f"二人称の呼びかけ {n}回",
-               f"下限{lo}回に{lo - n}回不足。情景と問いかけを二人称で書き直す")
+        record("WARN", f"二人称の呼びかけ {n}回",
+               f"自前の下限{lo}回(参照92本はp10が4回、中央値12回)。情景と問いかけを二人称で書き直す")
     ny = len(re.findall(spec["patterns"]["second_person_you"], joined))
-    if ny < d["second_person_you_good"]:
+    if ny < ed["second_person_you_good"]:
         record("WARN", f"「あなた」自体は {ny}回",
-               f"目安{d['second_person_you_good']}回。参照の最上位1本は「我々」中心のため文体上の選択でもある")
+               f"目安{ed['second_person_you_good']}回。参照92本も中央値5回で、"
+               "「我々」中心の回もあるため文体上の選択でもある")
 
 
 def check_questions(paras, spec):
-    lo = spec["distribution"]["question_para_min"]
+    im = spec["imitation"]
+    lo, good = im["question_para_min"], im["question_para_good"]
     hits = [i for i, p in enumerate(paras, 1)
             if p.rstrip().rstrip("。」").endswith("か")]
-    if len(hits) >= lo:
+    if len(hits) >= good:
         record("PASS", f"疑問文で終わる段落 {len(hits)}件", "P" + " P".join(str(i) for i in hits))
+    elif len(hits) >= lo:
+        record("PASS", f"疑問文で終わる段落 {len(hits)}件", f"目安{good}件(参照92本の疑問文は中央値12文)")
     else:
         record("WARN", f"疑問文で終わる段落 {len(hits)}件",
-               f"下限{lo}件。参照4本の疑問文は2〜11文で位置は自由だが、問いで区切る箇所は要る")
+               f"下限{lo}件。参照92本の疑問文は中央値12文で、最も少ない回でも3文あった")
 
 
 def check_limitation(paras, spec):
-    lo = spec["distribution"]["limitation_min"]
+    """限界と反証。参照の中央値は0箇所で、これは完全に自前の規律である。"""
+    lo = spec["editorial"]["limitation_min"]
     hits = [i for i, p in enumerate(paras, 1)
             if any(k in p for k in spec["limitation_markers"])]
     if len(hits) >= lo:
         record("PASS", f"限界と反証 {len(hits)}件", "P" + " P".join(str(i) for i in hits))
     else:
         record("WARN", "限界と反証がない",
-               "自分が出した研究を自分で削る。参照4本中1本のみの技法だが、本チャンネルでは必須扱い")
+               "参照92本の中央値は0箇所。模倣ではなく、本チャンネルの事実規律から来る自前の技法である")
 
 
 def check_macro(paras, spec):
-    lo = spec["distribution"]["macro_min"]
+    im = spec["imitation"]
     macro = re.compile(spec["patterns"]["macro"])
     hits = [i for i, p in enumerate(paras, 1) if macro.search(p)]
-    if len(hits) >= lo:
+    if len(hits) >= im["macro_good"]:
         record("PASS", f"巨視化 {len(hits)}件", "進化史・歴史・制度への引き上げ")
+    elif len(hits) >= im["macro_min"]:
+        record("PASS", f"巨視化 {len(hits)}件", f"目安{im['macro_good']}件(参照92本の中央値6件)")
     else:
         record("WARN", "巨視化がない", "進化史・歴史反転・制度の発明のいずれかへ一度引き上げる")
 
 
 def check_meta(paras, spec):
-    d = spec["distribution"]
-    lo, hi = scale(paras, d["meta_allowed_paras"])
+    """設計図を音読する言い回し。
+
+    v3.2からv4.0では「参照は本編でメタ発話をしない」として2件超をFAILにしていたが、
+    これは手作業の書き起こし4本だけを見た判断だった。全92本では中央値1件・p90が3件・
+    最大6件あり、しかも18指標のうち再生数との相関が最も強かったのがこの指標で、
+    符号は正(rho=+0.273)である。多重比較の補正後に有意ではないため
+    「多いほど伸びる」とは言えないが、「少ないほど良い」の根拠も無い。
+    したがってv5.0では、定型化を避けるための上限としてWARNだけを残す。
+    """
+    im = spec["imitation"]
+    lo, hi = scale(paras, [5, 6])
     allowed = set(range(lo, hi + 1))
     hits = []
     for i, p in enumerate(paras, 1):
@@ -412,12 +447,15 @@ def check_meta(paras, spec):
         for k in spec["meta_markers"]:
             if k in p:
                 hits.append(f"P{i}「{k}」")
-    lim = d["meta_max_outside"]
-    if len(hits) <= lim:
-        record("PASS", f"メタ発話 {len(hits)}件", f"許容{lim}件(参照4本は開幕の1回だけ)")
+    soft, hard = im["meta_soft_max"], im["meta_hard_max"]
+    if len(hits) <= soft:
+        record("PASS", f"メタ発話 {len(hits)}件", f"目安{soft}件以内(参照92本は中央値1件、p90が3件)")
+    elif len(hits) <= hard:
+        record("WARN", f"メタ発話 {len(hits)}件",
+               " ".join(hits[:6]) + f" ← 目安{soft}件(参照のp90)。転換は宣言せず内容で行う")
     else:
         record("FAIL", f"メタ発話が多すぎる {len(hits)}件",
-               " ".join(hits[:8]) + f" ← 許容{lim}件。設計図を音読せず、内容で転換する")
+               " ".join(hits[:8]) + f" ← 上限{hard}件(参照92本の最大値)を超えている")
 
 
 def check_sentence_len(paras, spec):

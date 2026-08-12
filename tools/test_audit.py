@@ -86,16 +86,15 @@ def build(**defect):
     p[40] = (SPEC["signature"] +
              "よろしければチャンネル登録と高評価をお願いします。それでは次の動画で、またお会いしましょう。")
 
-    if defect.get("no_free_decile"):
-        for i in range(1, 40):
-            p[i] = p[i] + "2020年の調査では、対象は3400人だった。"
     if defect.get("long_study_run"):
-        p[20] = ("2011年、行動経済学者が1万2400人の家計簿を解析した。"
-                 "対象は35歳から54歳の1200世帯である。脱落したのは120人だった。"
-                 "差は0.87パーセントだった。回答率は92パーセントだった。") + FILLER * 2
-    if defect.get("no_callback"):
-        p[34] = pad("ここまでの道のりを、いちど整理しておこう。", 150)
-        p[35] = pad("出てきたものを、順に並べ直す。", 150)
+        p[20] = "。".join(
+            f"{2001+i}年の調査では、対象は{100+i*7}人だった" for i in range(9)) + "。"
+    if defect.get("too_many_meta"):
+        for i in (9, 12, 15, 18, 21, 24, 27, 30):
+            p[i] = "ここで、話を戻そう。この動画で言いたいのは、そこではない。" + p[i]
+    if defect.get("too_many_sentences"):
+        for i in range(6, 34):
+            p[i] = p[i] + "そこに値札がついている。" * 4
     if defect.get("open_number"):
         p[1] = pad("3人に1人が、同じ場面で立ち止まる。", 160)
     if defect.get("no_signature"):
@@ -129,9 +128,9 @@ def main():
         bad.append("仕様準拠の台本が不合格になった:\n" + "\n".join(fails(out)))
 
     cases = [
-        ("no_free_decile", "研究ゼロの区間", "研究の出てこない区間"),
         ("long_study_run", "研究文の長すぎる連続", "研究文の最長連続"),
-        ("no_callback", "冒頭への回帰の欠落", "冒頭への回帰がない"),
+        ("too_many_meta", "メタ発話の過剰", "メタ発話が多すぎる"),
+        ("too_many_sentences", "文数の過剰", "総文数"),
         ("open_number", "冒頭の数字", "冒頭に数字がある"),
         ("no_signature", "シグネチャの欠落", "シグネチャが末尾にない"),
         ("forbidden_char", "禁止記号", "禁止記号を検出"),
