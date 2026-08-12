@@ -1,0 +1,3 @@
+# YouTubeの生字幕(json3)は1本あたり約500KBある。
+# tools/subs_to_text.py で変換した .txt だけを版管理する。
+*.json3
