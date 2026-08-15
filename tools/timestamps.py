@@ -51,11 +51,12 @@ def main():
         paras = [p.strip() for p in re.split(r"\n\s*\n", f.read()) if p.strip()]
 
     n = len(paras)
-    if n < 38:
+    if n < 36:
         print(f"段落数が {n} しかない。先に tools/audit.py を通すこと", file=sys.stderr)
         return 1
-    if n not in (40, 41):
-        print(f"注意: 段落数が {n} で40でも41でもないため、ビート対応が近似になる\n", file=sys.stderr)
+    if n != 40:
+        print(f"注意: 段落数が {n} なので、章の区切りを40段落基準から比例で割り付ける\n",
+              file=sys.stderr)
 
     counts = [body_len(p) for p in paras]
     total = sum(counts)
@@ -65,7 +66,12 @@ def main():
 
     cum = 0
     rows = []
+    # 40段落基準の区切りを、実際の段落数へ比例させる(tools/audit.py と同じ考え方)
+    def scale(i):
+        return max(1, min(n, round(i * n / 40)))
+
     for name, first, last in CHAPTERS:
+        first, last = scale(first), (n if name == CHAPTERS[-1][0] else scale(last))
         start_sec = cum / args.rate * 60
         chars = sum(counts[i] for i in range(first - 1, min(last, n)))
         cum += chars
